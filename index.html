@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Bug Fix Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Game Screen */
+        .game-screen {
+            display: none;
+            background: #1a1f2e;
+            border: 2px solid #64748b;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .timer {
+            font-size: 32px;
+            font-weight: bold;
+            background: #334155;
+            padding: 10px 20px;
+            border-radius: 8px;
+            min-width: 100px;
+            text-align: center;
+            border: 2px solid #64748b;
+        }
+
+        .timer.warning {
+            background: #7c2d12;
+            border-color: #ea580c;
+            color: #ffa500;
+        }
+
+        .timer.danger {
+            background: #7c2d12;
+            border-color: #dc2626;
+            color: #ef4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .score {
+            font-size: 16px;
+            background: #334155;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #64748b;
+        }
+
+        .challenge-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #0f172a;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+
+        .challenge-info p {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .challenge-info strong {
+            color: #60a5fa;
+        }
+
+        /* Code Display */
+        .code-section {
+            margin-bottom: 30px;
+        }
+
+        .code-label {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .buggy-code {
+            background: #0f172a;
+            border: 2px solid #7c3aed;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+            color: #fbbf24;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-weight: 500;
+        }
+
+        /* Input Area */
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: #0f172a;
+            border: 2px solid #64748b;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #e2e8f0;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-skip {
+            background: #475569;
+            color: white;
+        }
+
+        .btn-skip:hover {
+            background: #64748b;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Success Screen */
+        .success-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        .success-screen.active {
+            display: flex;
+        }
+
+        .success-content {
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .success-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .success-message {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+        }
+
+        /* Failure Screen */
+        .failure-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        .failure-screen.active {
+            display: flex;
+        }
+
+        .failure-content {
+            text-align: center;
+        }
+
+        .failure-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: shake 0.6s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-20px); }
+            75% { transform: translateX(20px); }
+        }
+
+        .failure-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .failure-message {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Start Screen */
+        .start-screen {
+            display: none;
+            text-align: center;
+            background: #1a1f2e;
+            border: 2px solid #64748b;
+            border-radius: 12px;
+            padding: 60px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .start-screen.active {
+            display: block;
+        }
+
+        .start-title {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .start-description {
+            font-size: 18px;
+            color: #cbd5e1;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Score Display */
+        .end-score {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 20px;
+        }
+
+        .btn-again {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+        }
+
+        .btn-again:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .title {
+                font-size: 22px;
+            }
+
+            .timer {
+                font-size: 24px;
+                width: 100%;
+                text-align: center;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-submit, .btn-next {
+                width: 100%;
+            }
+
+            .buggy-code {
+                font-size: 12px;
+            }
+
+            textarea {
+                font-size: 12px;
+                min-height: 150px;
+            }
+
+            .success-title, .failure-title {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div class="start-screen active" id="startScreen">
+            <div class="start-title">C++ Bug Fix Challenge</div>
+            <div class="start-description">
+                Fix the C++ code errors within the time limit!<br>
+                Green screen = Success | Red screen = Time's up
+            </div>
+            <button class="btn-start" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="header">
+                <div class="title">C++ Bug Fixer</div>
+                <div class="timer" id="timer">60</div>
+                <div class="score" id="score">Score: 0/0</div>
+            </div>
+
+            <div class="challenge-info">
+                <p id="challengeDescription"></p>
+            </div>
+
+            <div class="code-section">
+                <div class="code-label">❌ Buggy Code:</div>
+                <div class="buggy-code" id="buggyCode"></div>
+            </div>
+
+            <div class="code-section">
+                <div class="code-label">✏️ Your Fixed Code:</div>
+                <textarea id="answerInput" placeholder="Paste or type your fixed code here..."></textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-submit" id="submitBtn" onclick="submitAnswer()">Submit Answer</button>
+                <button class="btn-skip" onclick="skipChallenge()">Skip</button>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="success-screen" id="successScreen">
+            <div class="success-content">
+                <div class="success-icon">✅</div>
+                <div class="success-title">Correct!</div>
+                <div class="success-message" id="successMsg">Great job! You fixed the code.</div>
+                <button class="btn-next" onclick="nextChallenge()">Next Challenge</button>
+            </div>
+        </div>
+
+        <!-- Failure Screen -->
+        <div class="failure-screen" id="failureScreen">
+            <div class="failure-content">
+                <div class="failure-icon">⏱️</div>
+                <div class="failure-title">Time's Up!</div>
+                <div class="failure-message">You ran out of time. The correct answer was:</div>
+                <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; max-width: 500px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" id="correctAnswerDisplay"></div>
+                <button class="btn-next" onclick="nextChallenge()">Next Challenge</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game challenges with bugs
+        const challenges = [
+            {
+                description: "Fix: Missing semicolon after variable declaration",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int x = 5\n    cout << x << endl;\n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int x = 5;\n    cout << x << endl;\n    return 0;\n}`
+            },
+            {
+                description: "Fix: Incorrect comparison operator in if statement",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int age = 18;\n    if (age = 18) {\n        cout << "You are an adult" << endl;\n    }\n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int age = 18;\n    if (age == 18) {\n        cout << "You are an adult" << endl;\n    }\n    return 0;\n}`
+            },
+            {
+                description: "Fix: Array index out of bounds logic error",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int arr[5] = {1, 2, 3, 4, 5};\n    for (int i = 0; i <= 5; i++) {\n        cout << arr[i] << endl;\n    }\n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int arr[5] = {1, 2, 3, 4, 5};\n    for (int i = 0; i < 5; i++) {\n        cout << arr[i] << endl;\n    }\n    return 0;\n}`
+            },
+            {
+                description: "Fix: Missing closing brace",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int num = 10;\n    if (num > 5) {\n        cout << "Greater than 5" << endl;\n    \n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int num = 10;\n    if (num > 5) {\n        cout << "Greater than 5" << endl;\n    }\n    return 0;\n}`
+            },
+            {
+                description: "Fix: Wrong function name (cout vs ount)",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    string message = "Hello, World!";\n    ount << message << endl;\n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    string message = "Hello, World!";\n    cout << message << endl;\n    return 0;\n}`
+            },
+            {
+                description: "Fix: Variable not declared",
+                buggy: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << name << endl;\n    return 0;\n}`,
+                correct: `#include <iostream>\nusing namespace std;\n\nint main() {\n    string name = "John";\n    cout << name << endl;\n    return 0;\n}`
+            }
+        ];
+
+        let currentChallenge = 0;
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let gameActive = false;
+
+        function startGame() {
+            document.getElementById("startScreen").classList.remove("active");
+            document.getElementById("gameScreen").classList.add("active");
+            currentChallenge = 0;
+            score = 0;
+            gameActive = true;
+            loadChallenge();
+            startTimer();
+        }
+
+        function loadChallenge() {
+            if (currentChallenge >= challenges.length) {
+                endGame();
+                return;
+            }
+
+            const challenge = challenges[currentChallenge];
+            document.getElementById("challengeDescription").textContent = `Challenge ${currentChallenge + 1}/${challenges.length}: ${challenge.description}`;
+            document.getElementById("buggyCode").textContent = challenge.buggy;
+            document.getElementById("answerInput").value = "";
+            document.getElementById("score").textContent = `Score: ${score}/${challenges.length}`;
+            timeLeft = 60;
+            updateTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+
+                if (timeLeft <= 0) {
+                    gameActive = false;
+                    clearInterval(timerInterval);
+                    showTimeoutScreen();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const timerEl = document.getElementById("timer");
+            timerEl.textContent = timeLeft;
+            timerEl.classList.remove("warning", "danger");
+            
+            if (timeLeft <= 10) {
+                timerEl.classList.add("danger");
+            } else if (timeLeft <= 20) {
+                timerEl.classList.add("warning");
+            }
+        }
+
+        function submitAnswer() {
+            if (!gameActive) return;
+
+            const userAnswer = document.getElementById("answerInput").value.trim();
+            const correctAnswer = challenges[currentChallenge].correct.trim();
+
+            // Normalize whitespace for comparison
+            const normalizeCode = (code) => code.replace(/\s+/g, " ");
+
+            if (normalizeCode(userAnswer) === normalizeCode(correctAnswer)) {
+                gameActive = false;
+                clearInterval(timerInterval);
+                score++;
+                document.getElementById("successMsg").textContent = `Great job! You earned ${Math.max(1, Math.floor(timeLeft / 10))} bonus seconds!`;
+                document.getElementById("successScreen").classList.add("active");
+            } else {
+                alert("❌ Not quite right. Try again or check the code more carefully!");
+            }
+        }
+
+        function skipChallenge() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            const challenge = challenges[currentChallenge];
+            document.getElementById("correctAnswerDisplay").textContent = challenge.correct;
+            document.getElementById("failureScreen").classList.add("active");
+        }
+
+        function showTimeoutScreen() {
+            document.getElementById("gameScreen").classList.remove("active");
+            const challenge = challenges[currentChallenge];
+            document.getElementById("correctAnswerDisplay").textContent = challenge.correct;
+            document.getElementById("failureScreen").classList.add("active");
+        }
+
+        function nextChallenge() {
+            document.getElementById("successScreen").classList.remove("active");
+            document.getElementById("failureScreen").classList.remove("active");
+            
+            currentChallenge++;
+            
+            if (currentChallenge >= challenges.length) {
+                showFinalScore();
+            } else {
+                document.getElementById("gameScreen").classList.add("active");
+                gameActive = true;
+                loadChallenge();
+                startTimer();
+            }
+        }
+
+        function showFinalScore() {
+            document.getElementById("gameScreen").classList.remove("active");
+            const percentage = Math.round((score / challenges.length) * 100);
+            
+            const screenClass = percentage >= 80 ? "success-screen" : "failure-screen";
+            const screen = document.getElementById(screenClass === "success-screen" ? "successScreen" : "failureScreen");
+            
+            const title = screen.querySelector(screenClass === "success-screen" ? ".success-title" : ".failure-title");
+            const message = screen.querySelector(screenClass === "success-screen" ? ".success-message" : ".failure-message");
+            
+            title.textContent = percentage >= 80 ? "🎉 Excellent!" : "Game Over";
+            message.innerHTML = `<strong>Final Score: ${score}/${challenges.length} (${percentage}%)</strong>`;
+            
+            const button = screen.querySelector("button");
+            button.textContent = "Play Again";
+            button.onclick = () => location.reload();
+            
+            screen.classList.add("active");
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            showFinalScore();
+        }
+    </script>
+</body>
+</html>
